@@ -12,10 +12,10 @@
 
 // export default sequelize;
 import { Sequelize } from 'sequelize';
-
+import { sql } from '@vercel/postgres';
 const sequelize = new Sequelize({
     dialect: 'postgres',
-    dialectModule: require('pg'),
+    dialectModule: sql,
     host: 'ep-patient-dew-a4qwbn7j-pooler.us-east-1.aws.neon.tech', 
     port: 5432,
     database: 'verceldb', 
