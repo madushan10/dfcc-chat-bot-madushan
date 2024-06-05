@@ -12,7 +12,7 @@
 
 // export default sequelize;
 import { Sequelize } from 'sequelize';
-import pg from '@vercel/postgres';
+import pg from 'pg';
 
 const sequelize = new Sequelize({
     dialect: 'postgres',
