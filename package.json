@@ -34,6 +34,7 @@
     "@types/nodemailer": "^6.4.14",
     "@types/pdf-parse": "^1.1.4",
     "@types/sequelize": "^4.28.20",
+    "@vercel/postgres": "^0.8.0",
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
