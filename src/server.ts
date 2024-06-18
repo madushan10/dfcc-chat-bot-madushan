@@ -564,7 +564,7 @@ app.post('/voice', (req, res) => {
 
   twimlResponse.say('Hello, you have reached the Node.js and Twilio integration demo.');
 
-  res.type('text/xml');
+  res.type('text/xml'); 
   res.send(twimlResponse.toString());
 });
 
