@@ -571,9 +571,9 @@ app.post('/voice', (req, res) => {
 app.get('/make-call', async (req, res) => {
   try {
       const call = await client.calls.create({
-          url: 'http://demo.twilio.com/docs/voice.xml',
-          to: process.env.TWILIO_PHONE_NUMBER!, // The Twilio numb er to call
-          from: process.env.MY_PHONE_NUMBER!, // Your personal number
+          url: 'https://dfcc-chat-bot-madushan.vercel.app/voice',
+          to: process.env.TWILIO_PHONE_NUMBER!, 
+          from: process.env.MY_PHONE_NUMBER!, 
       });
   
       res.send(`Call initiated. Call SID: ${call.sid}`);
