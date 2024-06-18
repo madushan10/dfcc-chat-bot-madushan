@@ -575,7 +575,7 @@ app.get('/make-call', async (req, res) => {
           to: process.env.TWILIO_PHONE_NUMBER!, // The Twilio number to call
           from: process.env.MY_PHONE_NUMBER!, // Your personal number
       });
-
+  
       res.send(`Call initiated. Call SID: ${call.sid}`);
   } catch (error) {
       res.status(500).send('Error making call: ' + error.message);
