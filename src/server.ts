@@ -552,22 +552,34 @@ app.post("/chat-bot-get-intent-data", getIntentData);
 app.post("/chat-bot-get-target-data", getTargetData);
 
 
-import * as twilio from 'twilio';
+import twilio from 'twilio';
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-
+const accountSid = process.env.TWILIO_ACCOUNT_SID!;
+const authToken = process.env.TWILIO_AUTH_TOKEN!;
 const client = twilio(accountSid, authToken);
 
+app.post('/voice', (req, res) => {
+  const twimlResponse = new twilio.twiml.VoiceResponse();
 
-const body = 'Hello from twilio-node';
-const to = '+12345678901'; 
-const from = '+12345678901';
+  twimlResponse.say('Hello, you have reached the Node.js and Twilio integration demo.');
 
-client.messages
-  .create({ body, to, from })
-  .then((message) => console.log(`Message sent: SID - ${message.sid}`))
-  .catch((error) => console.error(error));
+  res.type('text/xml');
+  res.send(twimlResponse.toString());
+});
+
+app.get('/make-call', async (req, res) => {
+  try {
+      const call = await client.calls.create({
+          url: 'http://demo.twilio.com/docs/voice.xml',
+          to: process.env.TWILIO_PHONE_NUMBER!, // The Twilio number to call
+          from: process.env.MY_PHONE_NUMBER!, // Your personal number
+      });
+
+      res.send(`Call initiated. Call SID: ${call.sid}`);
+  } catch (error) {
+      res.status(500).send('Error making call: ' + error.message);
+  }
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
