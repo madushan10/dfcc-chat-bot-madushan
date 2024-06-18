@@ -46,8 +46,7 @@ import { getFlowPage } from './controllers/flowController';
 import { getBotFlowPage } from './controllers/botFlowChatView';
 import { chatFlowResponse } from './controllers/botFlowChatController';
 import { chatFlowData } from './controllers/botFlowData';
-import dotenv from 'dotenv';
-dotenv.config();
+
 const app = express();
 app.use(cookieParser());
 // Set up view engine
@@ -556,8 +555,8 @@ app.post("/chat-bot-get-target-data", getTargetData);
 
 import twilio from 'twilio';
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID!;
-const authToken = process.env.TWILIO_AUTH_TOKEN!;
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
 
 app.post('/voice', (req, res) => {
