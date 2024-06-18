@@ -572,8 +572,8 @@ app.get('/make-call', async (req, res) => {
   try {
       const call = await client.calls.create({
           url: 'https://dfcc-chat-bot-madushan.vercel.app/voice',
-          to: process.env.TWILIO_PHONE_NUMBER!, 
-          from: process.env.MY_PHONE_NUMBER!, 
+          to: process.env.TWILIO_PHONE_NUMBER, 
+          from: process.env.MY_PHONE_NUMBER, 
       });
   
       res.send(`Call initiated. Call SID: ${call.sid}`);
