@@ -46,6 +46,8 @@ import { getFlowPage } from './controllers/flowController';
 import { getBotFlowPage } from './controllers/botFlowChatView';
 import { chatFlowResponse } from './controllers/botFlowChatController';
 import { chatFlowData } from './controllers/botFlowData';
+import dotenv from 'dotenv';
+dotenv.config();
 const app = express();
 app.use(cookieParser());
 // Set up view engine
