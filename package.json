@@ -34,6 +34,7 @@
     "@types/nodemailer": "^6.4.14",
     "@types/pdf-parse": "^1.1.4",
     "@types/sequelize": "^4.28.20",
+    "@types/twilio": "^3.19.3",
     "@vercel/postgres": "^0.8.0",
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
@@ -53,6 +54,7 @@
     "nodemailer": "^6.9.13",
     "pdf-parse": "^1.1.1",
     "pg": "^8.12.0",
-    "sequelize": "^6.37.1"
+    "sequelize": "^6.37.1",
+    "twilio": "^5.1.1"
   }
 }

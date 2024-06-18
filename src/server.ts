@@ -551,6 +551,24 @@ app.post("/data-flow-card-data", CardData);
 app.post("/chat-bot-get-intent-data", getIntentData);
 app.post("/chat-bot-get-target-data", getTargetData);
 
+
+import * as twilio from 'twilio';
+
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+const client = twilio(accountSid, authToken);
+
+
+const body = 'Hello from twilio-node';
+const to = '+12345678901'; 
+const from = '+12345678901';
+
+client.messages
+  .create({ body, to, from })
+  .then((message) => console.log(`Message sent: SID - ${message.sid}`))
+  .catch((error) => console.error(error));
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
