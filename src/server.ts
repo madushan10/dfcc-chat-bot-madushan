@@ -618,10 +618,16 @@ app.post('/voice', (request: Request, response: Response) => {
 });
 
 app.post('/results', (request: Request, response: Response) => {
+  try {
   console.log(request.body);
   const user_question = request.body.SpeechResult;
   const twiml = new  VoiceResponse();
-  twiml.say(user_question);
+  twiml.say("'"+user_question+"'");
+  }
+  catch (error) {
+    console.log("Error processing question:", error);
+}
+
 });
 
 const PORT = process.env.PORT || 3001;
