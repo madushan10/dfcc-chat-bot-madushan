@@ -66,7 +66,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
         Do NOT make up any answers and questions not relevant to the context using public information.`;
 
         const final_answer = await openai.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-3.5-turbo-instruct",
             prompt: questionRephrasePrompt,
             max_tokens: 180,
             temperature: 0,
