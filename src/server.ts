@@ -553,33 +553,45 @@ app.post("/chat-bot-get-intent-data", getIntentData);
 app.post("/chat-bot-get-target-data", getTargetData);
 
 
-import twilio from 'twilio';
+// import twilio from 'twilio';
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = twilio(accountSid, authToken);
+// const accountSid = process.env.TWILIO_ACCOUNT_SID;
+// const authToken = process.env.TWILIO_AUTH_TOKEN;
+// const client = twilio(accountSid, authToken);
 
-app.post('/voice', (req, res) => {
-  const twimlResponse = new twilio.twiml.VoiceResponse();
+// app.post('/voice', (req, res) => {
+//   const twimlResponse = new twilio.twiml.VoiceResponse();
 
-  twimlResponse.say('Hello, you have reached the Node.js and Twilio integration demo.');
+//   twimlResponse.say('Hello, you have reached the Node.js and Twilio integration demo.');
 
-  res.type('text/xml'); 
-  res.send(twimlResponse.toString());
-});
+//   res.type('text/xml'); 
+//   res.send(twimlResponse.toString());
+// });
 
-app.get('/make-call', async (req, res) => { 
-  try {
-      const call = await client.calls.create({
-          url: 'https://dfcc-chat-bot-madushan.vercel.app/voice',
-          to: process.env.TWILIO_PHONE_NUMBER!, 
-          from: process.env.MY_PHONE_NUMBER!, 
-      });
+// app.get('/make-call', async (req, res) => { 
+//   try {
+//       const call = await client.calls.create({
+//           url: 'https://dfcc-chat-bot-madushan.vercel.app/voice',
+//           to: process.env.TWILIO_PHONE_NUMBER!, 
+//           from: process.env.MY_PHONE_NUMBER!, 
+//       });
   
-      res.send(`Call initiated. Call SID: ${call.sid}`);
-  } catch (error) {
-      res.status(500).send('Error making call: ' + error.message);
-  }
+//       res.send(`Call initiated. Call SID: ${call.sid}`);
+//   } catch (error) {
+//       res.status(500).send('Error making call: ' + error.message);
+//   }
+// });
+
+import { twiml } from 'twilio';
+
+app.post('/voice', (request: Request, response: Response) => {
+  // Use the Twilio Node.js SDK to build an XML response
+  const voiceResponse = new twiml.VoiceResponse();
+  voiceResponse.say('Hello world!');
+
+  // Render the response as XML in reply to the webhook request
+  response.type('text/xml');
+  response.send(voiceResponse.toString());
 });
 
 const PORT = process.env.PORT || 3001;
