@@ -26,7 +26,7 @@ export const twilioVoice = async (req: Request, res: Response, next: NextFunctio
                 speechModel : "phone_call"
             })
             gather.say(" Please ask your question");
-        res.send(twiml.toString());
+        return res.send(twiml.toString());
       } catch (error) {
         console.error(error);
         return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
@@ -74,7 +74,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
         res.type('xml');
         const twiml = new  VoiceResponse();
         twiml.say(final_answer.choices[0].text);
-        res.send(twiml.toString());
+        return res.send(twiml.toString());
       } catch (error) {
         console.error(error);
         return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
