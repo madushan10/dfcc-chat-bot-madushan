@@ -19,7 +19,7 @@ interface RequestWithChatId extends ExpressRequest {
 interface ChatEntry {
     role: string;
     content: string;
-}
+} 
 
 
 
