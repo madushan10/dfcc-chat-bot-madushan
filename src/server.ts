@@ -585,9 +585,18 @@ app.post("/chat-bot-get-target-data", getTargetData);
 import { twiml } from 'twilio';
 
 app.post('/voice', (request: Request, response: Response) => {
-  // Use the Twilio Node.js SDK to build an XML response
   const voiceResponse = new twiml.VoiceResponse();
-  voiceResponse.say('Hello world!');
+  const userMessage = request.body.SpeechResult;
+
+  let replyMessage = 'Hello world!';
+  
+  if (userMessage) {
+    replyMessage = `You said: ${userMessage}`;
+  } else {
+    replyMessage = `You said: Nothing`;
+  }
+
+  voiceResponse.say(replyMessage);
 
   // Render the response as XML in reply to the webhook request
   response.type('text/xml');
