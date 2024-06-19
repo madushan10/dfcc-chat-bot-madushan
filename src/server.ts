@@ -582,25 +582,45 @@ app.post("/chat-bot-get-target-data", getTargetData);
 //   }
 // });
 
-import { twiml } from 'twilio';
+//import { twiml } from 'twilio';
+// app.post('/voice', (request: Request, response: Response) => {
+//   const voiceResponse = new twiml.VoiceResponse();
+//   const userMessage = request.body.SpeechResult;
 
-app.post('/voice', (request: Request, response: Response) => {
-  const voiceResponse = new twiml.VoiceResponse();
-  const userMessage = request.body.SpeechResult;
-
-  let replyMessage = 'Hello world!';
+//   let replyMessage = 'Hello world!';
   
-  if (userMessage) {
-    replyMessage = `You said: ${userMessage}`;
-  } else {
-    replyMessage = `You said: Nothing`;
-  }
+//   if (userMessage) {
+//     replyMessage = `You said: ${userMessage}`;
+//   } else {
+//     replyMessage = `You said: Nothing`;
+//   }
 
-  voiceResponse.say(replyMessage);
+//   voiceResponse.say(replyMessage);
 
-  // Render the response as XML in reply to the webhook request
-  response.type('text/xml');
-  response.send(voiceResponse.toString());
+//   // Render the response as XML in reply to the webhook request
+//   response.type('text/xml');
+//   response.send(voiceResponse.toString());
+// });
+
+const VoiceResponse = require('twilio').twiml.VoiceResponse;
+app.post('/voice', (request: Request, response: Response) => {
+  response.type('xml');
+  const twiml = new  VoiceResponse();
+  twiml.say("Hello, This is dfcc chat bot");
+  const gather = twiml.gather({
+    input : "speech",
+    action : "/results",
+    language : "en-US",
+    speechModel : "phone_call"
+  })
+  gather.say(" Please ask your question");
+  response.send(twiml.toString());
+});
+
+app.post('/results', (request: Request, response: Response) => {
+  const user_question = request.body.SpeechResult;
+  const twiml = new  VoiceResponse();
+  twiml.say(user_question);
 });
 
 const PORT = process.env.PORT || 3001;
