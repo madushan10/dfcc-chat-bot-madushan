@@ -618,6 +618,7 @@ app.post('/voice', (request: Request, response: Response) => {
 });
 
 app.post('/results', (request: Request, response: Response) => {
+  console.log(request.body);
   const user_question = request.body.SpeechResult;
   const twiml = new  VoiceResponse();
   twiml.say(user_question);
