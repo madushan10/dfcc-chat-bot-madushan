@@ -620,12 +620,14 @@ app.post('/voice', (request: Request, response: Response) => {
 app.post('/results', (request: Request, response: Response) => {
   try {
   console.log(request.body);
+  response.type('xml');
   const user_question = request.body.SpeechResult;
   const twiml = new  VoiceResponse();
-  twiml.say("message received");
+  twiml.say("'"+user_question+"'");
+  response.send(twiml.toString());
   }
   catch (error) {
-    console.log("Error processing question:", error);
+    console.error("Error processing question:", error);
 }
 
 });
