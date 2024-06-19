@@ -31,6 +31,7 @@ import { botChatsOnload,botChatsGetMessages,botChatsRefresh,botChatsRefreshMessa
 import { LiveChatHistoryOnload,LiveChatHistoryMessages,LiveChatHistoryRefresh,LiveChatHistoryRefreshMessages} from './controllers/LiveChatHistory';
 import { insertNode,insertEdge,updateNode,updateEdge,deleteNode,deleteEdge,retrieveData,textOnlyData,textBoxData,ButtonGroup
   ,ButtonData,CardData,getIntentData,getTargetData} from './controllers/dataFlowController';
+  import { twilioVoice,twilioResults } from './controllers/twilioCalls';
 import { addQuestion} from './controllers/Questions';
 import Admin from '../models/Admin';
 import User from '../models/User';
@@ -552,85 +553,38 @@ app.post("/data-flow-card-data", CardData);
 app.post("/chat-bot-get-intent-data", getIntentData);
 app.post("/chat-bot-get-target-data", getTargetData);
 
+app.post("/twilio-voice", twilioVoice);
+app.post("/twilio-results", twilioResults);
 
-// import twilio from 'twilio';
-
-// const accountSid = process.env.TWILIO_ACCOUNT_SID;
-// const authToken = process.env.TWILIO_AUTH_TOKEN;
-// const client = twilio(accountSid, authToken);
-
-// app.post('/voice', (req, res) => {
-//   const twimlResponse = new twilio.twiml.VoiceResponse();
-
-//   twimlResponse.say('Hello, you have reached the Node.js and Twilio integration demo.');
-
-//   res.type('text/xml'); 
-//   res.send(twimlResponse.toString());
+// const VoiceResponse = require('twilio').twiml.VoiceResponse;
+// app.post('/twilio-voice', (request: Request, response: Response) => {
+//   response.type('xml');
+//   const twiml = new  VoiceResponse();
+//   twiml.say("Hello, This is dfcc chat bot");
+//   const gather = twiml.gather({
+//     input : "speech",
+//     action : "/results",
+//     language : "en-US",
+//     speechModel : "phone_call"
+//   })
+//   gather.say(" Please ask your question");
+//   response.send(twiml.toString());
 // });
 
-// app.get('/make-call', async (req, res) => { 
+// app.post('/results', (request: Request, response: Response) => {
 //   try {
-//       const call = await client.calls.create({
-//           url: 'https://dfcc-chat-bot-madushan.vercel.app/voice',
-//           to: process.env.TWILIO_PHONE_NUMBER!, 
-//           from: process.env.MY_PHONE_NUMBER!, 
-//       });
-  
-//       res.send(`Call initiated. Call SID: ${call.sid}`);
-//   } catch (error) {
-//       res.status(500).send('Error making call: ' + error.message);
+//   console.log(request.body);
+//   response.type('xml');
+//   const user_question = request.body.SpeechResult;
+//   const twiml = new  VoiceResponse();
+//   twiml.say(+user_question);
+//   response.send(twiml.toString());
 //   }
+//   catch (error) {
+//     console.error("Error processing question:", error);
+// }
+
 // });
-
-//import { twiml } from 'twilio';
-// app.post('/voice', (request: Request, response: Response) => {
-//   const voiceResponse = new twiml.VoiceResponse();
-//   const userMessage = request.body.SpeechResult;
-
-//   let replyMessage = 'Hello world!';
-  
-//   if (userMessage) {
-//     replyMessage = `You said: ${userMessage}`;
-//   } else {
-//     replyMessage = `You said: Nothing`;
-//   }
-
-//   voiceResponse.say(replyMessage);
-
-//   // Render the response as XML in reply to the webhook request
-//   response.type('text/xml');
-//   response.send(voiceResponse.toString());
-// });
-
-const VoiceResponse = require('twilio').twiml.VoiceResponse;
-app.post('/voice', (request: Request, response: Response) => {
-  response.type('xml');
-  const twiml = new  VoiceResponse();
-  twiml.say("Hello, This is dfcc chat bot");
-  const gather = twiml.gather({
-    input : "speech",
-    action : "/results",
-    language : "en-US",
-    speechModel : "phone_call"
-  })
-  gather.say(" Please ask your question");
-  response.send(twiml.toString());
-});
-
-app.post('/results', (request: Request, response: Response) => {
-  try {
-  console.log(request.body);
-  response.type('xml');
-  const user_question = request.body.SpeechResult;
-  const twiml = new  VoiceResponse();
-  twiml.say("'"+user_question+"'");
-  response.send(twiml.toString());
-  }
-  catch (error) {
-    console.error("Error processing question:", error);
-}
-
-});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
