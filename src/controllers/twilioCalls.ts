@@ -42,6 +42,10 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
             input: user_question,
         });
 
+        console.log("user_question",user_question);
+
+        console.log("embedding",embedding.data[0].embedding);
+        
         const queryResponse = await namespace.query({
             vector: embedding.data[0].embedding,
             topK: 2,
@@ -57,7 +61,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
           });
         let context = results.join("\n");
 
-        console.log(context);
+        //console.log(context);
         const questionRephrasePrompt = `You are a helpful assistant and you are friendly. 
         if user greet you you will give proper greeting in friendly manner. Your name is DFCC GPT.
         Answer ${user_question} Only based on given Context: ${context}, your answer must be less than 150 words. 
