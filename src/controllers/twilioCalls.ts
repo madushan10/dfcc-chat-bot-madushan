@@ -85,18 +85,19 @@
 //         return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
 //       }
 // };
-import express, { Request, Response, NextFunction } from 'express';
-import { twiml } from 'twilio';
+import { Request, Response, NextFunction } from 'express';
+import { Twilio, twiml } from 'twilio';
 import OpenAI from 'openai';
-const { createReadStream } = require('fs');
-const FormData = require('form-data');
+import fetch from 'node-fetch';
+import FormData from 'form-data';
+const lame = require('node-lame').lame;
 
+const twilioClient = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const VoiceResponse = require('twilio').twiml.VoiceResponse;
 
 export const twilioVoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const response = new VoiceResponse();
+    const response = new twiml.VoiceResponse();
     response.say('Hello, please speak after the beep. Press any key when you are done.');
     response.record({
         action: '/twilio-results',
@@ -113,17 +114,18 @@ export const twilioVoice = async (req: Request, res: Response, next: NextFunctio
       return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
     }
 };
-const lame = require('node-lame').lame; // Assuming you're using node-lame for MP3 conversion
 
 export const twilioResults = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const recordingUrl = req.body.RecordingUrl;
-    console.log(`Recording URL: ${recordingUrl}`);
+    const recordingSid = req.body.RecordingSid;
+    console.log(`Recording SID: ${recordingSid}`);
 
-    // Error handling for potential URL issues
-    if (!recordingUrl || !recordingUrl.startsWith('http')) {
-      throw new Error('Invalid recording URL format. Please provide a valid HTTP URL.');
-    }
+    // Fetch the recording using Twilio SDK
+    const recording = await twilioClient.recordings(recordingSid).fetch();
+
+    // Now you can access the recording URL and other details
+    const recordingUrl = recording.uri;
+    console.log(`Recording URL: ${recordingUrl}`);
 
     // Fetch the audio recording data
     const audioResponse = await fetch(recordingUrl);
@@ -134,22 +136,19 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     }
 
     // Handle different audio data formats
-    const audioBlob = await audioResponse.blob();
-
-    // Check recording format (if possible) - adapt based on your retrieval method
+    const audioBlob = await audioResponse.buffer(); // Use buffer() to get binary data
 
     // Audio format conversion (if applicable)
-    let convertedAudioBlob = audioBlob;
-    convertedAudioBlob = await convertAudio(audioBlob, 'mp3'); 
+    const convertedAudioBlob = await convertAudio(audioBlob, 'mp3'); 
 
-    // Create a File object for OpenAI (if needed)
-    const filename = 'recording.audio';
-    const file = new File([convertedAudioBlob], filename, { type: convertedAudioBlob.type });
+    // Create a File object for OpenAI
+    const filename = 'recording.mp3'; // Assuming it's MP3 format after conversion
+    const file = new File([convertedAudioBlob], filename, { type: 'audio/mp3' });
 
     // OpenAI transcription with error handling
     const transcriptionResponse = await openai.audio.transcriptions.create({
       file,
-      model: 'whisper-1', // Assuming whisper-1 is the desired model
+      model: 'whisper-1', // Adjust as needed
       language: 'en',
     });
 
@@ -161,7 +160,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     console.log(`Transcription: ${transcription}`);
 
     // Twilio response with transcription
-    const twimlResponse = new VoiceResponse();
+    const twimlResponse = new twiml.VoiceResponse();
     twimlResponse.say(transcription);
 
     res.type('text/xml');
@@ -169,15 +168,11 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
   } catch (error) {
     console.error(error);
     let errorMessage = 'Internal Server Error';
-
-    // Provide more specific error messages if possible
-    // ... (same error handling as before)
-
     res.status(500).json({ status: 'error', message: errorMessage });
   }
 };
 
-async function convertAudio(audioBlob: Blob, targetFormat: string): Promise<Blob> {
+async function convertAudio(audioBlob: Buffer, targetFormat: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const encoder = new lame({
       output: targetFormat, // Replace with 'mp3' or your target format
@@ -185,24 +180,16 @@ async function convertAudio(audioBlob: Blob, targetFormat: string): Promise<Blob
       bitRate: 128, // Adjust bitrate as needed
     });
 
-    const reader = new FileReader();
-    reader.readAsArrayBuffer(audioBlob);
+    encoder.on('error', (error) => reject(error));
 
-    reader.onload = (event) => {
-      const arrayBuffer = event.target.result as ArrayBuffer;
-      const pcmData = new Float32Array(arrayBuffer);
+    const chunks = [];
+    encoder.on('data', (chunk) => chunks.push(chunk));
+    encoder.on('end', () => {
+      const convertedBuffer = Buffer.concat(chunks);
+      resolve(convertedBuffer);
+    });
 
-      const mp3Stream = encoder.encode(pcmData);
-
-      const chunks = [];
-      mp3Stream.on('data', (data) => chunks.push(data));
-      mp3Stream.on('end', () => {
-        const convertedBlob = new Blob(chunks, { type: `audio/${targetFormat}` }); // Replace with 'audio/mpeg' for MP3
-        resolve(convertedBlob);
-      });
-      mp3Stream.on('error', (error) => reject(error));
-    };
-
-    reader.onerror = reject;
+    // Write the audio data to the encoder
+    encoder.end(audioBlob);
   });
 }
