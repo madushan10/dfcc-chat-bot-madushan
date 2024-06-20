@@ -90,7 +90,7 @@ import { Twilio, twiml } from 'twilio';
 import OpenAI from 'openai';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
-const lame = require('node-lame').lame;
+import { Lame } from 'node-lame';
 
 const twilioClient = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -122,8 +122,8 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
 
+    // const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3`;
     const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/AC458893156fa318bd2a6ad408a011ff7a/Recordings/RE9b440476dbb8d201378419694a8b370c.mp3`;
-
     const response = await fetch(recordingUrl, {
       method: 'GET',
       headers: {
@@ -173,24 +173,16 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
 };
 
 async function convertAudio(audioBuffer: Buffer, targetFormat: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const encoder = new lame({
-      output: targetFormat, // Replace with 'mp3' or your target format
-      channels: 1, // Adjust for mono or stereo
-      bitRate: 128, // Adjust bitrate as needed
-    });
+  const encoder = new Lame({
+    output: 'buffer', // output as a Buffer
+    bitrate: 128,
+    raw: true,
+  }).setBuffer(audioBuffer);
 
-    encoder.on('error', (error) => reject(error));
-
-    const chunks: Buffer[] = [];
-    encoder.on('data', (chunk: Buffer) => chunks.push(chunk));
-    encoder.on('end', () => {
-      const convertedBuffer = Buffer.concat(chunks);
-      resolve(convertedBuffer);
-    });
-
-    // Write the audio data to the encoder
-    encoder.write(audioBuffer);
-    encoder.end();
-  });
+  try {
+    await encoder.encode();
+    return encoder.getBuffer();
+  } catch (error) {
+    throw new Error(`Audio conversion failed: ${error.message}`);
+  }
 }
