@@ -88,7 +88,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { twiml } from 'twilio';
 import OpenAI from 'openai';
-const fs = require('fs');
+const { createReadStream } = require('fs');
+const FormData = require('form-data');
 
 const { VoiceResponse } = twiml;
 
@@ -119,22 +120,12 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     console.log(`Recording URL: ${recordingUrl}`);
 
     const audioResponse = await fetch(recordingUrl);
-    const audioBuffer = await audioResponse.arrayBuffer();
-    const data = new Uint8Array(audioBuffer);
-    await fs.promises.writeFile("test.wav", data);
-    const file = fs.createReadStream("test.wav");
-    
-    // const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+    const audioData = await audioResponse.arrayBuffer();
+    const formData = new FormData();
+    formData.append('file', audioData, { filename: 'recording.wav', contentType: 'audio/wav' });
 
-    // const file = {
-    //   buffer: audioBuffer, 
-    //   filename: 'audio.wav',
-    //   mimetype: 'audio/wav',
-    // };
-    // Transcribe the audio to text using OpenAI Whisper
-    
     const transcriptionResponse = await openai.audio.transcriptions.create({
-      file: file,
+      file: formData,
       model: 'whisper-1',
       language: 'en',
     });
