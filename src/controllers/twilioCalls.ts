@@ -128,7 +128,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
             encoding: 'LINEAR16',
             sampleRateHertz: 8000,
             languageCode: 'en-US',
-        },
+        }, 
         audio: {
             content: Buffer.from(audioBuffer).toString('base64'),
         },
