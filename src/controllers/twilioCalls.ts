@@ -85,36 +85,14 @@
 //         return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
 //       }
 // };
-
 import express, { Request, Response, NextFunction } from 'express';
 import { twiml } from 'twilio';
-import { SpeechClient } from '@google-cloud/speech';
-import { v2 as Translate } from '@google-cloud/translate';
-import { Storage } from '@google-cloud/storage';
-async function authenticateImplicitWithAdc() {
-  const storage = new Storage({
-    projectId : "positive-shell-380811",
-  });
-
-  try {
-    const [buckets] = await storage.getBuckets();
-    console.log('Buckets:');
-
-    for (const bucket of buckets) {
-      console.log(`- ${bucket.name}`);
-    }
-
-    console.log('Listed all storage buckets.');
-  } catch (error) {
-    console.error('Error listing storage buckets:', error);
-  }
-}
-
-authenticateImplicitWithAdc();
+import OpenAI from 'openai';
+const fs = require('fs');
 
 const { VoiceResponse } = twiml;
-const speechClient = new SpeechClient();
-const translate = new Translate.Translate();
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const twilioVoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -140,49 +118,39 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const recordingUrl = req.body.RecordingUrl;
     console.log(`Recording URL: ${recordingUrl}`);
 
-    // Fetch the audio file from the recording URL 
+    // Fetch the audio file from the recording URL
     const audioResponse = await fetch(recordingUrl);
     const audioBuffer = await audioResponse.arrayBuffer();
 
-    // Transcribe the audio to text using Google Cloud Speech-to-Text
-    const [response] = await speechClient.recognize({
-        config: {
-            encoding: 'LINEAR16',
-            sampleRateHertz: 8000,
-            languageCode: 'en-US',
-        }, 
-        audio: {
-            content: Buffer.from(audioBuffer).toString('base64'),
-        },
+    // Convert audio buffer to base64
+    const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+
+    const file = {
+      buffer: audioBuffer, 
+      filename: 'audio.wav',
+      mimetype: 'audio/wav',
+    };
+    // Transcribe the audio to text using OpenAI Whisper
+    const transcriptionResponse = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(file),
+      model: 'whisper-1',
+      language: 'en',
     });
 
-    if (!response || !response.results || response.results.length === 0) {
-        throw new Error('No transcription results available');
-    }
-
-    const transcription = response.results
-        .map(result => result.alternatives?.[0]?.transcript)
-        .filter(transcript => transcript)
-        .join('\n');
-
+    const transcription = transcriptionResponse.text;
     if (!transcription) {
-        throw new Error('Transcription failed or resulted in empty text');
+      throw new Error('Transcription failed or resulted in empty text');
     }
 
     console.log(`Transcription: ${transcription}`);
 
-    // Translate the transcription
-    const [translation] = await translate.translate(transcription, 'en');
-    console.log(`Translation: ${translation}`);
-
-    // Respond to the call with the translated text
     const twimlResponse = new VoiceResponse();
-    twimlResponse.say(translation);
+    twimlResponse.say(transcription);
 
     res.type('text/xml');
     res.send(twimlResponse.toString());
-} catch (error) {
+  } catch (error) {
     console.error(error);
     res.status(500).json({ status: 'error', message: 'Internal Server Error' });
-}
+  }
 };
