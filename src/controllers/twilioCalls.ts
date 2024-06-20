@@ -118,7 +118,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const recordingUrl = req.body.RecordingUrl;
     console.log(`Recording URL: ${recordingUrl}`);
 
-    // Fetch the audio file from the recording URL
+    // Fetch the audio file from the recording URL 
     const audioResponse = await fetch(recordingUrl);
     const audioBuffer = await audioResponse.arrayBuffer();
 
