@@ -91,9 +91,8 @@ import OpenAI from 'openai';
 const { createReadStream } = require('fs');
 const FormData = require('form-data');
 
-const { VoiceResponse } = twiml;
-
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const VoiceResponse = require('twilio').twiml.VoiceResponse;
 
 export const twilioVoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
