@@ -138,19 +138,10 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const audioBlob = await audioResponse.blob();
 
     // Check recording format (if possible) - adapt based on your retrieval method
-    const recordingFormat = /* get format from Twilio response or metadata */;
 
     // Audio format conversion (if applicable)
     let convertedAudioBlob = audioBlob;
-    if (recordingFormat && !['mp3', 'wav', 'flac'].includes(recordingFormat.toLowerCase())) {
-      try {
-        // Use a conversion library (e.g., node-lame or node-wav)
-        convertedAudioBlob = await convertAudio(audioBlob, 'mp3'); // Replace with actual conversion logic
-      } catch (conversionError) {
-        console.error('Error during audio conversion:', conversionError);
-        throw new Error('Failed to convert audio to a supported format.');
-      }
-    }
+    convertedAudioBlob = await convertAudio(audioBlob, 'mp3'); 
 
     // Create a File object for OpenAI (if needed)
     const filename = 'recording.audio';
