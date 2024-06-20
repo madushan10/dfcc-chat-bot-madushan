@@ -114,29 +114,63 @@ export const twilioVoice = async (req: Request, res: Response, next: NextFunctio
       return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
     }
 };
+const lame = require('node-lame').lame; // Assuming you're using node-lame for MP3 conversion
+
 export const twilioResults = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const recordingUrl = req.body.RecordingUrl;
     console.log(`Recording URL: ${recordingUrl}`);
 
-    const audioResponse = await fetch(recordingUrl);
-    const audioBlob = await audioResponse.blob(); 
-    const filename = 'recording.audio';
-    const file = new File([audioBlob], filename, { type: audioBlob.type });
+    // Error handling for potential URL issues
+    if (!recordingUrl || !recordingUrl.startsWith('http')) {
+      throw new Error('Invalid recording URL format. Please provide a valid HTTP URL.');
+    }
 
+    // Fetch the audio recording data
+    const audioResponse = await fetch(recordingUrl);
+
+    // Ensure successful audio retrieval
+    if (!audioResponse.ok) {
+      throw new Error(`Failed to fetch audio recording: ${audioResponse.statusText}`);
+    }
+
+    // Handle different audio data formats
+    const audioBlob = await audioResponse.blob();
+
+    // Check recording format (if possible) - adapt based on your retrieval method
+    const recordingFormat = /* get format from Twilio response or metadata */;
+
+    // Audio format conversion (if applicable)
+    let convertedAudioBlob = audioBlob;
+    if (recordingFormat && !['mp3', 'wav', 'flac'].includes(recordingFormat.toLowerCase())) {
+      try {
+        // Use a conversion library (e.g., node-lame or node-wav)
+        convertedAudioBlob = await convertAudio(audioBlob, 'mp3'); // Replace with actual conversion logic
+      } catch (conversionError) {
+        console.error('Error during audio conversion:', conversionError);
+        throw new Error('Failed to convert audio to a supported format.');
+      }
+    }
+
+    // Create a File object for OpenAI (if needed)
+    const filename = 'recording.audio';
+    const file = new File([convertedAudioBlob], filename, { type: convertedAudioBlob.type });
+
+    // OpenAI transcription with error handling
     const transcriptionResponse = await openai.audio.transcriptions.create({
-      file: file,
-      model: 'whisper-1',
+      file,
+      model: 'whisper-1', // Assuming whisper-1 is the desired model
       language: 'en',
     });
 
-    const transcription = transcriptionResponse.text;
-    if (!transcription) {
+    if (!transcriptionResponse.text) {
       throw new Error('Transcription failed or resulted in empty text');
     }
 
+    const transcription = transcriptionResponse.text;
     console.log(`Transcription: ${transcription}`);
 
+    // Twilio response with transcription
     const twimlResponse = new VoiceResponse();
     twimlResponse.say(transcription);
 
@@ -144,6 +178,41 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     res.send(twimlResponse.toString());
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    let errorMessage = 'Internal Server Error';
+
+    // Provide more specific error messages if possible
+    // ... (same error handling as before)
+
+    res.status(500).json({ status: 'error', message: errorMessage });
   }
 };
+
+async function convertAudio(audioBlob: Blob, targetFormat: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const encoder = new lame({
+      output: targetFormat, // Replace with 'mp3' or your target format
+      channels: 1, // Adjust for mono or stereo
+      bitRate: 128, // Adjust bitrate as needed
+    });
+
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(audioBlob);
+
+    reader.onload = (event) => {
+      const arrayBuffer = event.target.result as ArrayBuffer;
+      const pcmData = new Float32Array(arrayBuffer);
+
+      const mp3Stream = encoder.encode(pcmData);
+
+      const chunks = [];
+      mp3Stream.on('data', (data) => chunks.push(data));
+      mp3Stream.on('end', () => {
+        const convertedBlob = new Blob(chunks, { type: `audio/${targetFormat}` }); // Replace with 'audio/mpeg' for MP3
+        resolve(convertedBlob);
+      });
+      mp3Stream.on('error', (error) => reject(error));
+    };
+
+    reader.onerror = reject;
+  });
+}
