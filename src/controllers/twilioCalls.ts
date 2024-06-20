@@ -119,33 +119,33 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
   try {
     const recordingSid = req.body.RecordingSid;
     console.log(`Recording SID: ${recordingSid}`);
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
 
-    // Fetch the recording using Twilio SDK
-    const recording = await twilioClient.recordings(recordingSid).fetch();
+    const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3`;
 
-    // Now you can access the recording URL and other details
-    const recordingUrl = recording.mediaUrl;
-    console.log(`Recording URL: ${recordingUrl}`);
-  
-    // Fetch the audio recording data
-    const audioResponse = await fetch(recordingUrl);
+    const response = await fetch(recordingUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+      }
+    });
 
-    // Ensure successful audio retrieval
-    if (!audioResponse.ok) {
-      throw new Error(`Failed to fetch audio recording: ${audioResponse.statusText}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch recording: ${response.statusText}`);
     }
 
-    // Handle different audio data formats
-    const audioBlob = await audioResponse.buffer(); // Use buffer() to get binary data
+    // Get the audio data as a buffer
+    const audioBuffer = await response.buffer();
 
-    // Audio format conversion (if applicable)
-    const convertedAudioBlob = await convertAudio(audioBlob, 'mp3'); 
+    // Convert the audio to MP3 if necessary
+    const convertedAudioBuffer = await convertAudio(audioBuffer, 'mp3');
 
     // Create a File object for OpenAI
-    const filename = 'recording.mp3'; // Assuming it's MP3 format after conversion
-    const file = new File([convertedAudioBlob], filename, { type: 'audio/mp3' });
+    const filename = 'recording.mp3';
+    const file = new File([convertedAudioBuffer], filename, { type: 'audio/mp3' });
 
-    // OpenAI transcription with error handling
+    // Send the file to OpenAI for transcription
     const transcriptionResponse = await openai.audio.transcriptions.create({
       file,
       model: 'whisper-1', // Adjust as needed
@@ -172,7 +172,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-async function convertAudio(audioBlob: Buffer, targetFormat: string): Promise<Buffer> {
+async function convertAudio(audioBuffer: Buffer, targetFormat: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const encoder = new lame({
       output: targetFormat, // Replace with 'mp3' or your target format
@@ -182,14 +182,15 @@ async function convertAudio(audioBlob: Buffer, targetFormat: string): Promise<Bu
 
     encoder.on('error', (error) => reject(error));
 
-    const chunks = [];
-    encoder.on('data', (chunk) => chunks.push(chunk));
+    const chunks: Buffer[] = [];
+    encoder.on('data', (chunk: Buffer) => chunks.push(chunk));
     encoder.on('end', () => {
       const convertedBuffer = Buffer.concat(chunks);
       resolve(convertedBuffer);
     });
 
     // Write the audio data to the encoder
-    encoder.end(audioBlob);
+    encoder.write(audioBuffer);
+    encoder.end();
   });
 }
