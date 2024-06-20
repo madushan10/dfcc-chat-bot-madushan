@@ -127,8 +127,11 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const recordingUrl = recording.uri;
     console.log(`Recording URL: ${recordingUrl}`);
 
+    // Construct absolute URL using Twilio API base URL and relative path
+    const absoluteUrl = `https://api.twilio.com${recordingUrl}`;
+
     // Fetch the audio recording data
-    const audioResponse = await fetch(recordingUrl);
+    const audioResponse = await fetch(absoluteUrl);
 
     // Ensure successful audio retrieval
     if (!audioResponse.ok) {
