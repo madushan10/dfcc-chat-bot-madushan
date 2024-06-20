@@ -20,7 +20,8 @@
     "typescript": "^5.4.3"
   },
   "dependencies": {
-    "@google-cloud/translate": "^8.2.0",
+    "@google-cloud/speech": "^6.6.0",
+    "@google-cloud/translate": "^8.3.0",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.7",
     "@types/ejs": "^3.1.5",

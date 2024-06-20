@@ -556,35 +556,6 @@ app.post("/chat-bot-get-target-data", getTargetData);
 app.post("/twilio-voice", twilioVoice);
 app.post("/twilio-results", twilioResults);
 
-// const VoiceResponse = require('twilio').twiml.VoiceResponse;
-// app.post('/twilio-voice', (request: Request, response: Response) => {
-//   response.type('xml');
-//   const twiml = new  VoiceResponse();
-//   twiml.say("Hello, This is dfcc chat bot");
-//   const gather = twiml.gather({
-//     input : "speech",
-//     action : "/results",
-//     language : "en-US",
-//     speechModel : "phone_call"
-//   })
-//   gather.say(" Please ask your question");
-//   response.send(twiml.toString());
-// });
-
-// app.post('/results', (request: Request, response: Response) => {
-//   try {
-//   console.log(request.body);
-//   response.type('xml');
-//   const user_question = request.body.SpeechResult;
-//   const twiml = new  VoiceResponse();
-//   twiml.say(+user_question);
-//   response.send(twiml.toString());
-//   }
-//   catch (error) {
-//     console.error("Error processing question:", error);
-// }
-
-// });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
