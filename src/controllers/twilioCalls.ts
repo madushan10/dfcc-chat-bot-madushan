@@ -85,10 +85,32 @@
 //         return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
 //       }
 // };
+
 import express, { Request, Response, NextFunction } from 'express';
 import { twiml } from 'twilio';
 import { SpeechClient } from '@google-cloud/speech';
 import { v2 as Translate } from '@google-cloud/translate';
+import { Storage } from '@google-cloud/storage';
+async function authenticateImplicitWithAdc() {
+  const storage = new Storage({
+    projectId : "positive-shell-380811",
+  });
+
+  try {
+    const [buckets] = await storage.getBuckets();
+    console.log('Buckets:');
+
+    for (const bucket of buckets) {
+      console.log(`- ${bucket.name}`);
+    }
+
+    console.log('Listed all storage buckets.');
+  } catch (error) {
+    console.error('Error listing storage buckets:', error);
+  }
+}
+
+authenticateImplicitWithAdc();
 
 const { VoiceResponse } = twiml;
 const speechClient = new SpeechClient();
