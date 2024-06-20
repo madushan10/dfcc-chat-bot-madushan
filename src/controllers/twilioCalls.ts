@@ -118,21 +118,23 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const recordingUrl = req.body.RecordingUrl;
     console.log(`Recording URL: ${recordingUrl}`);
 
-    // Fetch the audio file from the recording URL
     const audioResponse = await fetch(recordingUrl);
     const audioBuffer = await audioResponse.arrayBuffer();
+    const data = new Uint8Array(audioBuffer);
+    await fs.promises.writeFile("test.wav", data);
+    const file = fs.createReadStream("test.wav");
+    
+    // const audioBase64 = Buffer.from(audioBuffer).toString('base64');
 
-    // Convert audio buffer to base64
-    const audioBase64 = Buffer.from(audioBuffer).toString('base64');
-
-    const file = {
-      buffer: audioBuffer, 
-      filename: 'audio.wav',
-      mimetype: 'audio/wav',
-    };
+    // const file = {
+    //   buffer: audioBuffer, 
+    //   filename: 'audio.wav',
+    //   mimetype: 'audio/wav',
+    // };
     // Transcribe the audio to text using OpenAI Whisper
+    
     const transcriptionResponse = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(file),
+      file: file,
       model: 'whisper-1',
       language: 'en',
     });
