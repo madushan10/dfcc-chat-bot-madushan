@@ -120,12 +120,12 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     console.log(`Recording URL: ${recordingUrl}`);
 
     const audioResponse = await fetch(recordingUrl);
-    const audioData = await audioResponse.arrayBuffer();
-    const formData = new FormData();
-    formData.append('file', audioData, { filename: 'recording.wav', contentType: 'audio/wav' });
+    const audioBlob = await audioResponse.blob(); 
+    const filename = 'recording.audio';
+    const file = new File([audioBlob], filename, { type: audioBlob.type });
 
     const transcriptionResponse = await openai.audio.transcriptions.create({
-      file: formData,
+      file: file,
       model: 'whisper-1',
       language: 'en',
     });
