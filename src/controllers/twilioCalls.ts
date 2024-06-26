@@ -95,7 +95,6 @@ import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 
 ffmpeg.setFfmpegPath(ffmpegPath.path);
 
-
 const twilioClient = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -126,8 +125,8 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const accountSid = process.env.TWILIO_ACCOUNT_SID as string;
     const authToken = process.env.TWILIO_AUTH_TOKEN as string;
 
-     // const recordingUrl = https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3;
-     const recordingUrl = 'https://api.twilio.com/2010-04-01/Accounts/AC458893156fa318bd2a6ad408a011ff7a/Recordings/RE9b440476dbb8d201378419694a8b370c.mp3';
+    // const recordingUrl = https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3;
+    const recordingUrl = 'https://api.twilio.com/2010-04-01/Accounts/AC458893156fa318bd2a6ad408a011ff7a/Recordings/RE9b440476dbb8d201378419694a8b370c.mp3';
 
     const response = await fetch(recordingUrl, {
       method: 'GET',
@@ -179,15 +178,23 @@ async function convertAudio(audioBuffer: Buffer): Promise<Buffer> {
 
     outputStream.on('data', chunk => data.push(chunk));
     outputStream.on('end', () => resolve(Buffer.concat(data)));
-    outputStream.on('error', reject);
+    outputStream.on('error', error => {
+      console.error('Output stream error:', error);
+      reject(error);
+    });
 
     inputStream.end(audioBuffer);
 
     ffmpeg(inputStream)
+      .on('error', (error) => {
+        console.error('ffmpeg error:', error);
+        reject(error);
+      })
       .toFormat('mp3')
       .pipe(outputStream);
   });
 }
+
 
 
 // async function convertAudio(audioBuffer: Buffer, _targetFormat: string): Promise<Buffer> {
