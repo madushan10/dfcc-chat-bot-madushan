@@ -24,7 +24,6 @@
     "@ffmpeg/core": "^0.12.6",
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.1",
-    "@ffprobe-installer/ffprobe": "^2.1.2",
     "@google-cloud/speech": "^6.6.0",
     "@google-cloud/storage": "^7.11.2",
     "@google-cloud/translate": "^8.3.0",
