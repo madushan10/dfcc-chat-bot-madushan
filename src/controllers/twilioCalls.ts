@@ -89,15 +89,13 @@ import { Request, Response, NextFunction } from 'express';
 import { Twilio, twiml } from 'twilio';
 import OpenAI from 'openai';
 import fetch from 'node-fetch';
-import FormData from 'form-data';
-import { Lame } from 'node-lame';
-import * as fs from 'fs';
+import { PassThrough } from 'stream';
 import * as ffmpeg from 'fluent-ffmpeg';
 
 const twilioClient = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export const twilioVoice = async (req: Request, res: Response, next: NextFunction) => {
+export const twilioVoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const response = new twiml.VoiceResponse();
     response.say('Hello, please speak after the beep. Press any key when you are done.');
@@ -111,21 +109,20 @@ export const twilioVoice = async (req: Request, res: Response, next: NextFunctio
 
     res.type('text/xml');
     res.send(response.toString());
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
-    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+  }
 };
 
-export const twilioResults = async (req: Request, res: Response, next: NextFunction) => {
+export const twilioResults = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const recordingSid = req.body.RecordingSid;
+    const recordingSid = req.body.RecordingSid as string;
     console.log(`Recording SID: ${recordingSid}`);
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN; 
+    const accountSid = process.env.TWILIO_ACCOUNT_SID as string;
+    const authToken = process.env.TWILIO_AUTH_TOKEN as string;
 
-    // const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3`;
-    const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/AC458893156fa318bd2a6ad408a011ff7a/Recordings/RE9b440476dbb8d201378419694a8b370c.mp3`;
+    const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3`;
     const response = await fetch(recordingUrl, {
       method: 'GET',
       headers: {
@@ -169,35 +166,28 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     res.send(twimlResponse.toString());
   } catch (error) {
     console.error(error);
-    let errorMessage = 'Internal Server Error';
-    res.status(500).json({ status: 'error', message: errorMessage });
+    res.status(500).json({ status: 'error', message: 'Internal Server Error' });
   }
 };
 
 async function convertAudio(audioBuffer: Buffer): Promise<Buffer> {
-  const tempFile = `temp-${Math.random().toString(36).substring(2, 15)}.wav`;
+  return new Promise<Buffer>((resolve, reject) => {
+    const inputStream = new PassThrough();
+    const outputStream = new PassThrough();
+    const data: Buffer[] = [];
 
-  await fs.promises.writeFile(tempFile, audioBuffer);
+    outputStream.on('data', chunk => data.push(chunk));
+    outputStream.on('end', () => resolve(Buffer.concat(data)));
+    outputStream.on('error', reject);
 
-  try {
-    const process = ffmpeg(tempFile)
-      .toFormat('mp3');
+    inputStream.end(audioBuffer);
 
-    const mp3Data = await new Promise<Buffer>((resolve, reject) => {
-      process.on('end', () => {
-        resolve(fs.readFileSync(`${tempFile}.mp3`));
-      })
-      .on('error', reject);
-    });
-
-    await fs.promises.unlink(tempFile); // Cleanup temporary files
-    await fs.promises.unlink(`${tempFile}.mp3`);
-
-    return mp3Data;
-  } catch (error) {
-    throw new Error('Error converting buffer to mp3:');
-  }
+    ffmpeg(inputStream)
+      .toFormat('mp3')
+      .pipe(outputStream);
+  });
 }
+
 
 // async function convertAudio(audioBuffer: Buffer, _targetFormat: string): Promise<Buffer> {
 //   const encoder = new Lame({
