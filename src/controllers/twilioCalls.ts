@@ -91,11 +91,11 @@ import OpenAI from 'openai';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 import { Lame } from 'node-lame';
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import * as fs from 'fs';
+import * as ffmpeg from 'fluent-ffmpeg';
 
 const twilioClient = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const ffmpeg = createFFmpeg({ log: true });
 
 export const twilioVoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -141,7 +141,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const audioBuffer = await response.buffer();
 
     // Convert the audio to MP3 if necessary
-    const convertedAudioBuffer = await convertAudio(audioBuffer, 'mp3');
+    const convertedAudioBuffer = await convertAudio(audioBuffer);
 
     // Create a File object for OpenAI
     const filename = 'recording.mp3';
@@ -174,17 +174,29 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-async function convertAudio(audioBuffer: Buffer, targetFormat: string): Promise<Buffer> {
-  if (!ffmpeg.isLoaded()) {
-    await ffmpeg.load();
+async function convertAudio(audioBuffer: Buffer): Promise<Buffer> {
+  const tempFile = `temp-${Math.random().toString(36).substring(2, 15)}.wav`;
+
+  await fs.promises.writeFile(tempFile, audioBuffer);
+
+  try {
+    const process = ffmpeg(tempFile)
+      .toFormat('mp3');
+
+    const mp3Data = await new Promise<Buffer>((resolve, reject) => {
+      process.on('end', () => {
+        resolve(fs.readFileSync(`${tempFile}.mp3`));
+      })
+      .on('error', reject);
+    });
+
+    await fs.promises.unlink(tempFile); // Cleanup temporary files
+    await fs.promises.unlink(`${tempFile}.mp3`);
+
+    return mp3Data;
+  } catch (error) {
+    throw new Error('Error converting buffer to mp3:');
   }
-
-  ffmpeg.FS('writeFile', 'input.wav', await fetchFile(audioBuffer));
-
-  await ffmpeg.run('-i', 'input.wav', 'output.mp3');
-
-  const data = ffmpeg.FS('readFile', 'output.mp3');
-  return Buffer.from(data.buffer);
 }
 
 // async function convertAudio(audioBuffer: Buffer, _targetFormat: string): Promise<Buffer> {
