@@ -90,7 +90,12 @@ import { Twilio, twiml } from 'twilio';
 import OpenAI from 'openai';
 import fetch from 'node-fetch';
 import { PassThrough } from 'stream';
-import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from '@ffmpeg-installer/ffmpeg';
+import ffprobePath from '@ffprobe-installer/ffprobe';
+
+ffmpeg.setFfmpegPath(ffmpegPath.path);
+ffmpeg.setFfprobePath(ffprobePath.path);
 
 const twilioClient = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -100,10 +105,10 @@ export const twilioVoice = async (req: Request, res: Response, next: NextFunctio
     const response = new twiml.VoiceResponse();
     response.say('Hello, please speak after the beep. Press any key when you are done.');
     response.record({
-        action: '/twilio-results',
-        method: 'POST',
-        finishOnKey: '*',
-        maxLength: 60
+      action: '/twilio-results',
+      method: 'POST',
+      finishOnKey: '*',
+      maxLength: 60
     });
     response.say('Recording completed. Please wait while we process your request.');
 
@@ -122,8 +127,8 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const accountSid = process.env.TWILIO_ACCOUNT_SID as string;
     const authToken = process.env.TWILIO_AUTH_TOKEN as string;
 
-      // const recordingUrl = https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3;
-      const recordingUrl = 'https://api.twilio.com/2010-04-01/Accounts/AC458893156fa318bd2a6ad408a011ff7a/Recordings/RE9b440476dbb8d201378419694a8b370c.mp3';
+    const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3`;
+
     const response = await fetch(recordingUrl, {
       method: 'GET',
       headers: {
@@ -135,20 +140,16 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
       throw new Error(`Failed to fetch recording: ${response.statusText}`);
     }
 
-    // Get the audio data as a buffer
     const audioBuffer = await response.buffer();
 
-    // Convert the audio to MP3 if necessary
     const convertedAudioBuffer = await convertAudio(audioBuffer);
 
-    // Create a File object for OpenAI
     const filename = 'recording.mp3';
     const file = new File([convertedAudioBuffer], filename, { type: 'audio/mp3' });
 
-    // Send the file to OpenAI for transcription
     const transcriptionResponse = await openai.audio.transcriptions.create({
       file,
-      model: 'whisper-1', // Adjust as needed
+      model: 'whisper-1',
       language: 'en',
     });
 
@@ -159,7 +160,6 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const transcription = transcriptionResponse.text;
     console.log(`Transcription: ${transcription}`);
 
-    // Twilio response with transcription
     const twimlResponse = new twiml.VoiceResponse();
     twimlResponse.say(transcription);
 
