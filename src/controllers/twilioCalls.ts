@@ -122,7 +122,7 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
     const recordingSid = req.body.RecordingSid;
     console.log(`Recording SID: ${recordingSid}`);
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const authToken = process.env.TWILIO_AUTH_TOKEN; 
 
     // const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}.mp3`;
     const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/AC458893156fa318bd2a6ad408a011ff7a/Recordings/RE9b440476dbb8d201378419694a8b370c.mp3`;
