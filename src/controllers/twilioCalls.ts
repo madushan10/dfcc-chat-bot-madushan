@@ -91,9 +91,11 @@ import OpenAI from 'openai';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 import { Lame } from 'node-lame';
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
 const twilioClient = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ffmpeg = createFFmpeg({ log: true });
 
 export const twilioVoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -173,16 +175,29 @@ export const twilioResults = async (req: Request, res: Response, next: NextFunct
 };
 
 async function convertAudio(audioBuffer: Buffer, targetFormat: string): Promise<Buffer> {
-  const encoder = new Lame({
-    output: 'buffer', // output as a Buffer
-    bitrate: 128,
-    raw: true,
-  }).setBuffer(audioBuffer);
-
-  try {
-    await encoder.encode();
-    return encoder.getBuffer();
-  } catch (error) {
-    throw new Error(`Audio conversion failed: ${error.message}`);
+  if (!ffmpeg.isLoaded()) {
+    await ffmpeg.load();
   }
+
+  ffmpeg.FS('writeFile', 'input.wav', await fetchFile(audioBuffer));
+
+  await ffmpeg.run('-i', 'input.wav', 'output.mp3');
+
+  const data = ffmpeg.FS('readFile', 'output.mp3');
+  return Buffer.from(data.buffer);
 }
+
+// async function convertAudio(audioBuffer: Buffer, _targetFormat: string): Promise<Buffer> {
+//   const encoder = new Lame({
+//     output: 'buffer', // output as a Buffer
+//     bitrate: 128,
+//     raw: true,
+//   }).setBuffer(audioBuffer);
+
+//   try {
+//     await encoder.encode();
+//     return encoder.getBuffer();
+//   } catch (error) {
+//     throw new Error(`Audio conversion failed: ${error.message}`);
+//   }
+// }
